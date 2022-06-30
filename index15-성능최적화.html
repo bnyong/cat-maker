@@ -156,7 +156,7 @@
           jsonLocalStorage.getItem("favorites") || []
         });
 
-        const alreadyFavorite = favorites.include(mainCat);
+        const alreadyFavorite = favorites.includes(mainCat);
 
         async function setInitialCat(){
           const newCat = await fetchCat("First cat");
