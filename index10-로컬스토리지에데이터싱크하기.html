@@ -29,24 +29,7 @@
     <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script> 
-
     <script type="text/babel">
-
-      const jsonLocalStorage = {
-        setItem: (key, value) => {
-          localStorage.setItem(key, JSON.stringify(value));
-        },
-        getItem: (key) => {
-          return JSON.parse(localStorage.getItem(key));
-        },
-      };
-
-      const fetchCat = async (text) => {
-        const OPEN_API_DOMAIN = "https://cataas.com";
-        const response = await fetch(`${OPEN_API_DOMAIN}/cat/says/${text}?json=true`);
-        const responseJson = await response.json();
-        return `${OPEN_API_DOMAIN}/${responseJson.url}`;
-      };
 
       const Title = (props) => {
         return(
@@ -54,7 +37,6 @@
         );
       };
 
-      
       const Form = ({updateMainCat}) => {
         const includesHangul = (text) => /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/i.test(text);
 
@@ -79,7 +61,7 @@
             setErrorMessage("빈 값으로 만들 수 없습니다.");
             return;
           }
-          updateMainCat(value);
+          updateMainCat();
         }
         
         return(
@@ -107,10 +89,6 @@
 
       function Favorites({favorites}){
         
-        if(favorites.length === 0){
-          return <div>사진위 하트를 눌러 고양이 사진을 저장해보세요!</div>
-        }
-        
         return (
           <ul className="favorites">
             {favorites.map(cat => <CatItem img={cat} key={cat}/>)}
@@ -118,8 +96,7 @@
         );
       };
 
-      const MainCard = ({img,onHeartClick,alreadyFavorite}) => {
-        const hearIcon = alreadyFavorite ? "💖" : "🤍" ;
+      const MainCard = ({img,onHeartClick}) => {
         
         return(
           <div className="main-card">
@@ -128,7 +105,7 @@
               alt="고양이"
               width="400"
             />
-            <button onClick={onHeartClick}>{hearIcon}</button>
+            <button onClick={onHeartClick}>🤍</button>
           </div>
         );
       };
@@ -138,52 +115,36 @@
         const CAT2 = "https://cataas.com//cat/5e9970351b7a400011744233/says/inflearn";
         const CAT3 = "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript";
 
-        const [counter, setCounter] = React.useState(() => {
-          jsonLocalStorage.getItem("counter")
-        });
+        // 수정2 -> ui에 표시
+        // const [counter, setCounter] = React.useState(1);
+        // const [counter, setCounter] = React.useState(localStorage.getItem("counter"));
+
+        // 수정3 -> localStorage는 숫자를 문자로 받아와서 문자를 숫자로 변환하는 작업을 해야함!
+        const [counter, setCounter] = React.useState(
+          Number(localStorage.getItem("counter"))
+        );
 
         const [mainCat, setMainCat] = React.useState(CAT1);
+        const [favorites, setFavorites] = React.useState([CAT1,CAT2]);
 
-        const [favorites, setFavorites] = React.useState(() => {
-          jsonLocalStorage.getItem("favorites") || []
-        });
-
-        const alreadyFavorite = favorites.include(mainCat);
-
-        async function setInitialCat(){
-          const newCat = await fetchCat("First cat");
-          setMainCat(newCat);
-        };
-
-        React.useEffect(() => {
-          setInitialCat();
-        },[]);
-        
-        async function updateMainCat(value){     
-          const newCat = await fetchCat(value);
-          
-          setMainCat(newCat);
-
-          setCounter((prev) => {
-          const nextCounter = prev +1;
-          jsonLocalStorage.setItem("counter",nextCounter);
-          return nextCounter;
-          }); 
+        function updateMainCat(){
+          setMainCat(CAT2);
+          // 수정1 -> Application 탭에서 확인!
+          // setCounter(counter +1);
+          const nextCounter = counter +1;
+          setCounter(nextCounter);
+          localStorage.setItem("counter",nextCounter);
         }
 
         function handleHeartClick(){
-          const nextFavorites = [...favorites,mainCat];
-          setFavorites(nextFavorites);
-          jsonLocalStorage.setItem("favorites",nextFavorites);
+          setFavorites([...favorites,CAT3]);
         };
-        
-        const counterTitle = counter === null ? "" : counter + "번째";
         
         return(
           <div>
-            <Title>{counterTitle} 고양이 가라사대</Title>
+            <Title>{counter}번째 고양이 가라사대</Title>
             <Form updateMainCat={updateMainCat}/>
-            <MainCard img={mainCat} onHeartClick={handleHeartClick} alreadyFavorite={alreadyFavorite}/>
+            <MainCard img={mainCat} onHeartClick={handleHeartClick}/>
             <Favorites favorites={favorites}/>
           </div>
         );
@@ -197,3 +158,24 @@
     </script>
   </body>
 </html>
+
+<!-- 
+
+>>> 데이터 유지... (카운터, 하트)
+
+    생성을 하고 데이터는 잘 바뀌지만 새로고침을 하면 날아가고 다시 초기화된다.
+    새로고침을 눌러도 날아가지 않도록 브라우저의 자체 데이터베이스에 저장을 할것이다.
+
+    로컬 스트로지 (Local Storage) 라는 브라우저의 기본 API
+
+    
+    *콘솔창에서.....
+    localStorage.setItem("기술","리액트")  -> 저장하기
+    undefined
+
+    localStorage.getItem("기술")  -> 데이터를 불러오기
+    '리액트'
+
+    application 탭에서 Local Storage URL주소부분에서 데이터 확인 가능!
+
+ -->

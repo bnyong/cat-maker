@@ -29,24 +29,7 @@
     <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script> 
-
     <script type="text/babel">
-
-      const jsonLocalStorage = {
-        setItem: (key, value) => {
-          localStorage.setItem(key, JSON.stringify(value));
-        },
-        getItem: (key) => {
-          return JSON.parse(localStorage.getItem(key));
-        },
-      };
-
-      const fetchCat = async (text) => {
-        const OPEN_API_DOMAIN = "https://cataas.com";
-        const response = await fetch(`${OPEN_API_DOMAIN}/cat/says/${text}?json=true`);
-        const responseJson = await response.json();
-        return `${OPEN_API_DOMAIN}/${responseJson.url}`;
-      };
 
       const Title = (props) => {
         return(
@@ -54,7 +37,7 @@
         );
       };
 
-      
+      // const Form = ({handleFormSubmit}) => {
       const Form = ({updateMainCat}) => {
         const includesHangul = (text) => /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/i.test(text);
 
@@ -79,7 +62,7 @@
             setErrorMessage("빈 값으로 만들 수 없습니다.");
             return;
           }
-          updateMainCat(value);
+          updateMainCat();
         }
         
         return(
@@ -107,10 +90,6 @@
 
       function Favorites({favorites}){
         
-        if(favorites.length === 0){
-          return <div>사진위 하트를 눌러 고양이 사진을 저장해보세요!</div>
-        }
-        
         return (
           <ul className="favorites">
             {favorites.map(cat => <CatItem img={cat} key={cat}/>)}
@@ -118,8 +97,7 @@
         );
       };
 
-      const MainCard = ({img,onHeartClick,alreadyFavorite}) => {
-        const hearIcon = alreadyFavorite ? "💖" : "🤍" ;
+      const MainCard = ({img,onHeartClick}) => {
         
         return(
           <div className="main-card">
@@ -128,7 +106,7 @@
               alt="고양이"
               width="400"
             />
-            <button onClick={onHeartClick}>{hearIcon}</button>
+            <button onClick={onHeartClick}>🤍</button>
           </div>
         );
       };
@@ -138,52 +116,31 @@
         const CAT2 = "https://cataas.com//cat/5e9970351b7a400011744233/says/inflearn";
         const CAT3 = "https://cataas.com/cat/595f280b557291a9750ebf65/says/JavaScript";
 
-        const [counter, setCounter] = React.useState(() => {
-          jsonLocalStorage.getItem("counter")
-        });
-
+        const [counter, setCounter] = React.useState(1);
         const [mainCat, setMainCat] = React.useState(CAT1);
+        const [favorites, setFavorites] = React.useState([CAT1,CAT2]);
 
-        const [favorites, setFavorites] = React.useState(() => {
-          jsonLocalStorage.getItem("favorites") || []
-        });
 
-        const alreadyFavorite = favorites.include(mainCat);
+        /* function handleFormSubmit(event){
+          event.preventDefault();
+          setCounter(counter +1);
+          setMainCat(CAT2);
+        }; */
 
-        async function setInitialCat(){
-          const newCat = await fetchCat("First cat");
-          setMainCat(newCat);
-        };
-
-        React.useEffect(() => {
-          setInitialCat();
-        },[]);
-        
-        async function updateMainCat(value){     
-          const newCat = await fetchCat(value);
-          
-          setMainCat(newCat);
-
-          setCounter((prev) => {
-          const nextCounter = prev +1;
-          jsonLocalStorage.setItem("counter",nextCounter);
-          return nextCounter;
-          }); 
+        function updateMainCat(){
+          setMainCat(CAT2);
+          setCounter(counter +1);
         }
 
         function handleHeartClick(){
-          const nextFavorites = [...favorites,mainCat];
-          setFavorites(nextFavorites);
-          jsonLocalStorage.setItem("favorites",nextFavorites);
+          setFavorites([...favorites,CAT3]);
         };
-        
-        const counterTitle = counter === null ? "" : counter + "번째";
         
         return(
           <div>
-            <Title>{counterTitle} 고양이 가라사대</Title>
+            <Title>{counter}번째 고양이 가라사대</Title>
             <Form updateMainCat={updateMainCat}/>
-            <MainCard img={mainCat} onHeartClick={handleHeartClick} alreadyFavorite={alreadyFavorite}/>
+            <MainCard img={mainCat} onHeartClick={handleHeartClick}/>
             <Favorites favorites={favorites}/>
           </div>
         );
@@ -197,3 +154,28 @@
     </script>
   </body>
 </html>
+
+<!-- 
+
+>>> 중간 코드 정리하기
+  (1) 콘솔 모두 삭제
+  (2) 리액트에서 이벤트 핸들러 함수이름을 지을때 사용하는 컨벤션(convention): 규칙, 약속
+      이벤트핸들러 함수 이름을 지을때는 handle 이라고 시작을 하고 그 함수를 만약에 프롭으로 넘긴다고 했을 때 on 이라는 접두어를 붙인다. 실제로 내가 코딩한 함수의 이름은 handle로 지어도 이걸 프롭으로 넘길때는 on이라고 한다.
+      
+      <MainCard img={mainCat} handleHeartClick={handleHeartClick}/> -> 변경 -> <MainCard img={mainCat} onHeartClick={handleHeartClick}/> 
+      
+      const MainCard = ({img,handleHeartClick}) => { -> 변경 -> const MainCard = ({img,onHeartClick}) => {
+
+      <button onClick={handleHeartClick}>🤍</button> -> 변경 -> <button onClick={onHeartClick}>🤍</button>
+  
+  (3) 부모컴포넌트(App) 에서 handleFormSubmit이라는 함수를 부모에서 내려서 보내주고 있는데
+
+      <Form handleFormSubmit={handleFormSubmit}/>
+
+      const Form = () => {여기서는 사용하고 있지 않고 직접 handleFormSubmit을 구현하고 있다.
+
+      -> 부모컴포넌트의 handleFormSubmit을 수정한다. -> updateMainCat 함수를 새로 만들었음
+
+      const Form = ({updateMainCat}) => { 로 변경
+
+ -->
